@@ -1,0 +1,707 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DynamORM API &#8212; DynamORM 0.1.6 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Motivation for creating DynamORM" href="motivation.html" />
+    <link rel="prev" title="Developing" href="developing.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dynamorm-api">
+<h1>DynamORM API<a class="headerlink" href="#dynamorm-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-dynamorm">
+<span id="dynamorm"></span><h2><code class="docutils literal"><span class="pre">dynamorm</span></code><a class="headerlink" href="#module-dynamorm" title="Permalink to this headline">¶</a></h2>
+<p>The base module namespace simply imports <code class="docutils literal"><span class="pre">DynaModel</span></code> from <code class="docutils literal"><span class="pre">dynamorm.model</span></code> so that you can:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dynamorm</span> <span class="kn">import</span> <span class="n">DynaModel</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="module-dynamorm.model">
+<span id="dynamorm-model"></span><h2><code class="docutils literal"><span class="pre">dynamorm.model</span></code><a class="headerlink" href="#module-dynamorm.model" title="Permalink to this headline">¶</a></h2>
+<p>Models represent tables in DynamoDB and define the characteristics of the Dynamo service as well as the Marshmallow
+schema that is used for validating and marshalling your data.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">dynamorm.model.</code><code class="descname">DynaModel</code><span class="sig-paren">(</span><em>partial=False</em>, <em>**raw</em><span class="sig-paren">)</span></dt>
+<dd><p><code class="docutils literal"><span class="pre">DynaModel</span></code> is the base class all of your models will extend from.  This model definition encapsulates the
+parameters used to create and manage the table as well as the schema for validating and marshalling data into object
+attributes.  It will also hold any custom business logic you need for your objects.</p>
+<p>Your class must define two inner classes that specify the Dynamo Table options and the Schema, respectively.</p>
+<p>The Dynamo Table options are defined in a class named <code class="docutils literal"><span class="pre">Table</span></code>.  See the <a class="reference internal" href="#module-dynamorm.table" title="dynamorm.table"><code class="xref py py-mod docutils literal"><span class="pre">dynamorm.table</span></code></a> module for
+more information.</p>
+<p>The document schema is defined in a class named <code class="docutils literal"><span class="pre">Schema</span></code>, which should be filled out exactly as you would fill
+out any other Marshmallow <a class="reference external" href="https://marshmallow.readthedocs.io/en/latest/api_reference.html#marshmallow.Schema" title="(in marshmallow v3.0.0b2)"><code class="xref py py-class docutils literal"><span class="pre">Schema</span></code></a> or Schematics <code class="xref py py-class docutils literal"><span class="pre">Model</span></code>.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Marshmallow example</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">dynamorm</span> <span class="kn">import</span> <span class="n">DynaModel</span>
+
+<span class="kn">from</span> <span class="nn">marshmallow</span> <span class="kn">import</span> <span class="n">fields</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">validates</span><span class="p">,</span> <span class="n">ValidationError</span>
+
+<span class="k">class</span> <span class="nc">Thing</span><span class="p">(</span><span class="n">DynaModel</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Table</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;{env}-things&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ENVIRONMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;dev&#39;</span><span class="p">))</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">class</span> <span class="nc">Schema</span><span class="p">:</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">()</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="o">.</span><span class="n">OneOf</span><span class="p">((</span><span class="s1">&#39;purple&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;yellow&#39;</span><span class="p">)))</span>
+        <span class="n">compound</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="nd">@validates</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">validate_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="c1"># this is a very silly example just to illustrate that you can fill out the</span>
+            <span class="c1"># inner Schema class just like any other Marshmallow class</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;evan&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;No Evan&#39;s allowed&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Hello.  {name} here.  My ID is {id} and I&#39;m colored {color}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Schematics example</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">dynamorm</span> <span class="kn">import</span> <span class="n">DynaModel</span>
+
+<span class="kn">from</span> <span class="nn">schematics</span> <span class="kn">import</span> <span class="n">types</span>
+
+<span class="k">class</span> <span class="nc">Thing</span><span class="p">(</span><span class="n">DynaModel</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Table</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;{env}-things&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ENVIRONMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;dev&#39;</span><span class="p">))</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">class</span> <span class="nc">Schema</span><span class="p">:</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">()</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">()</span>
+        <span class="n">compound</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">DictType</span><span class="p">(</span><span class="n">types</span><span class="o">.</span><span class="n">IntType</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Hello.  {name} here.  My ID is {id} and I&#39;m colored {color}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="dynamorm.model.DynaModel">
+<em class="property">class </em><code class="descclassname">dynamorm.model.</code><code class="descname">DynaModel</code><span class="sig-paren">(</span><em>partial=False</em>, <em>**raw</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal"><span class="pre">DynaModel</span></code> is the base class all of your models will extend from.  This model definition encapsulates the
+parameters used to create and manage the table as well as the schema for validating and marshalling data into object
+attributes.  It will also hold any custom business logic you need for your objects.</p>
+<p>Your class must define two inner classes that specify the Dynamo Table options and the Schema, respectively.</p>
+<p>The Dynamo Table options are defined in a class named <code class="docutils literal"><span class="pre">Table</span></code>.  See the <a class="reference internal" href="#module-dynamorm.table" title="dynamorm.table"><code class="xref py py-mod docutils literal"><span class="pre">dynamorm.table</span></code></a> module for
+more information.</p>
+<p>The document schema is defined in a class named <code class="docutils literal"><span class="pre">Schema</span></code>, which should be filled out exactly as you would fill
+out any other Marshmallow <a class="reference external" href="https://marshmallow.readthedocs.io/en/latest/api_reference.html#marshmallow.Schema" title="(in marshmallow v3.0.0b2)"><code class="xref py py-class docutils literal"><span class="pre">Schema</span></code></a> or Schematics <code class="xref py py-class docutils literal"><span class="pre">Model</span></code>.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Marshmallow example</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">dynamorm</span> <span class="kn">import</span> <span class="n">DynaModel</span>
+
+<span class="kn">from</span> <span class="nn">marshmallow</span> <span class="kn">import</span> <span class="n">fields</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">validates</span><span class="p">,</span> <span class="n">ValidationError</span>
+
+<span class="k">class</span> <span class="nc">Thing</span><span class="p">(</span><span class="n">DynaModel</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Table</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;{env}-things&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ENVIRONMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;dev&#39;</span><span class="p">))</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">class</span> <span class="nc">Schema</span><span class="p">:</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">()</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="o">.</span><span class="n">OneOf</span><span class="p">((</span><span class="s1">&#39;purple&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;yellow&#39;</span><span class="p">)))</span>
+        <span class="n">compound</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="nd">@validates</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">validate_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="c1"># this is a very silly example just to illustrate that you can fill out the</span>
+            <span class="c1"># inner Schema class just like any other Marshmallow class</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;evan&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;No Evan&#39;s allowed&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Hello.  {name} here.  My ID is {id} and I&#39;m colored {color}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Schematics example</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">dynamorm</span> <span class="kn">import</span> <span class="n">DynaModel</span>
+
+<span class="kn">from</span> <span class="nn">schematics</span> <span class="kn">import</span> <span class="n">types</span>
+
+<span class="k">class</span> <span class="nc">Thing</span><span class="p">(</span><span class="n">DynaModel</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Table</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;{env}-things&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ENVIRONMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;dev&#39;</span><span class="p">))</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">class</span> <span class="nc">Schema</span><span class="p">:</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">()</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">StringType</span><span class="p">()</span>
+        <span class="n">compound</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">DictType</span><span class="p">(</span><span class="n">types</span><span class="o">.</span><span class="n">IntType</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Hello.  {name} here.  My ID is {id} and I&#39;m colored {color}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="p">))</span>
+</pre></div>
+</div>
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.get">
+<em class="property">classmethod </em><code class="descname">get</code><span class="sig-paren">(</span><em>consistent=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an item from the table</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hash_key</span><span class="o">=</span><span class="s2">&quot;three&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>consistent</strong> (<em>bool</em>) – If set to True the get will be a consistent read</li>
+<li><strong>**kwargs</strong> – You must supply your hash key, and range key if used</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.get_batch">
+<em class="property">classmethod </em><code class="descname">get_batch</code><span class="sig-paren">(</span><em>keys</em>, <em>consistent=False</em>, <em>attrs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.get_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator to get more than one item from the table.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keys</strong> – One or more dicts containing the hash key, and range key if used</li>
+<li><strong>consistent</strong> (<em>bool</em>) – If set to True then get_batch will be a consistent read</li>
+<li><strong>attrs</strong> (<em>str</em>) – The projection expression of which attrs to fetch, if None all attrs will be fetched</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.new_from_raw">
+<em class="property">classmethod </em><code class="descname">new_from_raw</code><span class="sig-paren">(</span><em>raw</em>, <em>partial=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.new_from_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new instance of this model from a raw (dict) of data that is loaded by our Schema</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>raw</strong> (<em>dict</em>) – The attributes to use when creating the instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.put">
+<em class="property">classmethod </em><code class="descname">put</code><span class="sig-paren">(</span><em>item</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put a single item into the table for this model</p>
+<p>The attributes on the item go through validation, so this may raise <code class="xref py py-class docutils literal"><span class="pre">ValidationError</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>item</strong> (<em>dict</em>) – The item to put into the table</li>
+<li><strong>**kwargs</strong> – All other kwargs are passed through to the put method on the table</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.put_batch">
+<em class="property">classmethod </em><code class="descname">put_batch</code><span class="sig-paren">(</span><em>*items</em>, <em>**batch_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.put_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put one or more items into the table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>*items</strong> – The items to put into the table</li>
+<li><strong>**kwargs</strong> – All other kwargs are passed through to the put_batch method on the table</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">put_batch</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;hash_key&quot;</span><span class="p">:</span> <span class="s2">&quot;one&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;hash_key&quot;</span><span class="p">:</span> <span class="s2">&quot;two&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;hash_key&quot;</span><span class="p">:</span> <span class="s2">&quot;three&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.put_unique">
+<em class="property">classmethod </em><code class="descname">put_unique</code><span class="sig-paren">(</span><em>item</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.put_unique" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put a single item into the table for this model, with a unique attribute constraint on the hash key</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>item</strong> (<em>dict</em>) – The item to put into the table</li>
+<li><strong>**kwargs</strong> – All other kwargs are passed through to the put_unique method on the table</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.query">
+<em class="property">classmethod </em><code class="descname">query</code><span class="sig-paren">(</span><em>query_kwargs=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a query on our table based on our keys</p>
+<p>You supply the key(s) to query based on as keyword arguments:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s2">&quot;Mr. Foo&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default the <code class="docutils literal"><span class="pre">eq</span></code> condition is used.  If you wish to use any of the other <a class="reference external" href="http://boto3.readthedocs.io/en/latest/reference/customizations/dynamodb.html#boto3.dynamodb.conditions.Key">valid conditions for keys</a> use
+a double underscore syntax following the key name.  For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">foo__begins_with</span><span class="o">=</span><span class="s2">&quot;Mr.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>query_kwargs</strong> (<em>dict</em>) – Extra parameters that should be passed through to the Table query function</li>
+<li><strong>**kwargs</strong> – The key(s) and value(s) to query based on</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dynamorm.model.DynaModel.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save this instance to the table</p>
+<p>The attributes on the item go through validation, so this may raise <code class="xref py py-class docutils literal"><span class="pre">ValidationError</span></code>.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.scan">
+<em class="property">classmethod </em><code class="descname">scan</code><span class="sig-paren">(</span><em>scan_kwargs=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a scan on our table</p>
+<p>You supply the attr(s) to query based on as keyword arguments:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">age</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default the <code class="docutils literal"><span class="pre">eq</span></code> condition is used.  If you wish to use any of the other <a class="reference external" href="http://boto3.readthedocs.io/en/latest/reference/customizations/dynamodb.html#boto3.dynamodb.conditions.Attr">valid conditions for attrs</a> use
+a double underscore syntax following the key name.  For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">age__lte</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Accessing nested attributes also uses the double underscore syntax:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Thing</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">address__state</span><span class="o">=</span><span class="s2">&quot;CA&quot;</span><span class="p">)</span>
+<span class="n">Thing</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">address__state__begins_with</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This returns a generator, which will continue to yield items until all matching the scan are produced,
+abstracting away pagination. More information on scan pagination: <a class="reference external" href="http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html#Scan.Pagination">http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html#Scan.Pagination</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scan_kwargs</strong> (<em>dict</em>) – Extra parameters that should be passed through to the Table scan function</li>
+<li><strong>**kwargs</strong> – The key(s) and value(s) to filter based on</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dynamorm.model.DynaModel.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>conditions=None</em>, <em>update_item_kwargs=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update this instance in the table</p>
+<p>As long as the update succeeds the attrs on this instance will be updated to match their new values.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.model.DynaModel.update_item">
+<em class="property">classmethod </em><code class="descname">update_item</code><span class="sig-paren">(</span><em>conditions=None</em>, <em>update_item_kwargs=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.model.DynaModel.update_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a item in the table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Params conditions:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">A dict of key/val pairs that should be applied as a condition to the update</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Params update_item_kwargs:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A dict of other kwargs that are passed through to update_item</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Params **kwargs:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Includes your hash/range key/val to match on as well as any keys to update</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dynamorm.model.DynaModelMeta">
+<em class="property">class </em><code class="descclassname">dynamorm.model.</code><code class="descname">DynaModelMeta</code><a class="headerlink" href="#dynamorm.model.DynaModelMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>DynaModelMeta is a metaclass for the DynaModel class that transforms our Table and Schema classes</p>
+<p>Since we can inspect the data we need to build the full data structures needed for working with tables and indexes
+users can define for more concise and readable table definitions that we transform into the final. To allow for a
+more concise definition of DynaModels we do not require that users define their inner Schema class as extending
+from the <a class="reference external" href="https://marshmallow.readthedocs.io/en/latest/api_reference.html#marshmallow.Schema" title="(in marshmallow v3.0.0b2)"><code class="xref py py-class docutils literal"><span class="pre">Schema</span></code></a>.  Instead, when the class is being defined we take the inner Schema and
+transform it into a new class named &lt;Name&gt;Schema, extending from <a class="reference external" href="https://marshmallow.readthedocs.io/en/latest/api_reference.html#marshmallow.Schema" title="(in marshmallow v3.0.0b2)"><code class="xref py py-class docutils literal"><span class="pre">Schema</span></code></a>.  For example, on a
+model named <code class="docutils literal"><span class="pre">Foo</span></code> the resulting <code class="docutils literal"><span class="pre">Foo.Schema</span></code> object would be an instance of a class named <code class="docutils literal"><span class="pre">FooSchema</span></code>, rather
+than a class named <code class="docutils literal"><span class="pre">Schema</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dynamorm.table">
+<span id="dynamorm-table"></span><h2><code class="docutils literal"><span class="pre">dynamorm.table</span></code><a class="headerlink" href="#module-dynamorm.table" title="Permalink to this headline">¶</a></h2>
+<p>The inner <code class="docutils literal"><span class="pre">Table</span></code> class on <code class="docutils literal"><span class="pre">DynaModel</span></code> definitions becomes an instance of our
+<a class="reference internal" href="#dynamorm.table.DynamoTable3" title="dynamorm.table.DynamoTable3"><code class="xref py py-class docutils literal"><span class="pre">dynamorm.table.DynamoTable3</span></code></a> class.</p>
+<p>The attributes you define on your inner <code class="docutils literal"><span class="pre">Table</span></code> class map to underlying boto data structures.  This mapping is
+expressed through the following data model:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="10%" />
+<col width="5%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Attribute</th>
+<th class="head">Required</th>
+<th class="head">Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>name</td>
+<td>True</td>
+<td>str</td>
+<td>The name of the table, as stored in Dynamo.</td>
+</tr>
+<tr class="row-odd"><td>hash_key</td>
+<td>True</td>
+<td>str</td>
+<td>The name of the field to use as the hash key.
+It must exist in the schema.</td>
+</tr>
+<tr class="row-even"><td>range_key</td>
+<td>False</td>
+<td>str</td>
+<td>The name of the field to use as the range_key, if one is used.
+It must exist in the schema.</td>
+</tr>
+<tr class="row-odd"><td>read</td>
+<td>True</td>
+<td>int</td>
+<td>The provisioned read throughput.</td>
+</tr>
+<tr class="row-even"><td>write</td>
+<td>True</td>
+<td>int</td>
+<td>The provisioned write throughput.</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="dynamorm.table.DynamoTable3">
+<em class="property">class </em><code class="descclassname">dynamorm.table.</code><code class="descname">DynamoTable3</code><span class="sig-paren">(</span><em>schema</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a Table object in the Boto3 DynamoDB API</p>
+<p>This is built in such a way that in the future, when Amazon releases future boto versions, a new DynamoTable class
+can be authored that implements the same methods but maps through to the new semantics.</p>
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.attribute_definitions">
+<code class="descname">attribute_definitions</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.attribute_definitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an appropriate AttributeDefinitions, based on our key attributes and the schema object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dynamorm.table.DynamoTable3.create">
+<code class="descname">create</code><span class="sig-paren">(</span><em>wait=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new table based on our attributes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wait</strong> (<em>bool</em>) – If set to True, the default, this call will block until the table is created</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dynamorm.table.DynamoTable3.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>wait=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete this existing table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wait</strong> (<em>bool</em>) – If set to True, the default, this call will block until the table is deleted</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.exists">
+<code class="descname">exists</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True or False based on the existance of this tables name in our resource</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.table.DynamoTable3.get_resource">
+<em class="property">classmethod </em><code class="descname">get_resource</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3.get_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the boto3 dynamodb resource, create it if it doesn’t exist</p>
+<p>The resource is stored globally on the <code class="docutils literal"><span class="pre">DynamoTable3</span></code> class and is shared between all models. To influence
+the connection parameters you just need to call <code class="docutils literal"><span class="pre">get_resource</span></code> on any model with the correct kwargs BEFORE you
+use any of the models.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dynamorm.table.DynamoTable3.get_table">
+<em class="property">classmethod </em><code class="descname">get_table</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3.get_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the boto3 Table object for this model, create it if it doesn’t exist</p>
+<p>The Table is stored on the class for each model, so it is shared between all instances of a given model.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.key_schema">
+<code class="descname">key_schema</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.key_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an appropriate KeySchema, based on our key attributes and the schema object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.provisioned_throughput">
+<code class="descname">provisioned_throughput</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.provisioned_throughput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an appropriate ProvisionedThroughput, based on our attributes</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dynamorm.table.DynamoTable3.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>item</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.DynamoTable3.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put a singular item into the table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>item</strong> (<em>dict</em>) – The data to put into the table</li>
+<li><strong>**kwargs</strong> – All other keyword arguments are passed through to the <a class="reference external" href="http://boto3.readthedocs.io/en/latest/reference/services/dynamodb.html#DynamoDB.Table.put_item">DynamoDB Table put_item</a> function.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.resource">
+<code class="descname">resource</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the boto3 resource</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dynamorm.table.DynamoTable3.table">
+<code class="descname">table</code><a class="headerlink" href="#dynamorm.table.DynamoTable3.table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the boto3 table</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dynamorm.table.remove_nones">
+<code class="descclassname">dynamorm.table.</code><code class="descname">remove_nones</code><span class="sig-paren">(</span><em>in_dict</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamorm.table.remove_nones" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively remove keys with a value of <code class="docutils literal"><span class="pre">None</span></code> from the <code class="docutils literal"><span class="pre">in_dict</span></code> collection</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">DynamORM</a></h1>
+
+
+
+<p class="blurb">Python object relation mapping library for Amazon's DynamoDB service.<br /></p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=NerdWallet&repo=DynamORM&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a href="https://travis-ci.org/NerdWallet/DynamORM">
+    <img
+        alt="https://secure.travis-ci.org/NerdWallet/DynamORM.svg?branch=master"
+        src="https://secure.travis-ci.org/NerdWallet/DynamORM.svg?branch=master"
+    />
+</a>
+</p>
+
+
+
+
+    
+
+<p>
+<a href="https://codecov.io/github/NerdWallet/DynamORM">
+    <img
+    alt="https://codecov.io/github/NerdWallet/DynamORM/coverage.svg?branch=master"
+    src="https://codecov.io/github/NerdWallet/DynamORM/coverage.svg?branch=master"
+    />
+</a>
+</p>
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">DynamORM API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-dynamorm"><code class="docutils literal"><span class="pre">dynamorm</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-dynamorm.model"><code class="docutils literal"><span class="pre">dynamorm.model</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-dynamorm.table"><code class="docutils literal"><span class="pre">dynamorm.table</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="motivation.html">Motivation for creating DynamORM</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="developing.html" title="previous chapter">Developing</a></li>
+      <li>Next: <a href="motivation.html" title="next chapter">Motivation for creating DynamORM</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; 2017 <a href="http://nerdwallet.com">NerdWallet</a>.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/NerdWallet/DynamORM" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
